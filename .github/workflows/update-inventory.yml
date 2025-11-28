@@ -1,0 +1,30 @@
+name: Update Inventory
+
+on:
+  repository_dispatch:
+    types: [update-inventory]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Update inventory.json
+        run: |
+          echo "${{ github.event.client_payload.data }}" > inventory.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add inventory.json
+          git commit -m "Updated inventory" || echo "No changes"
+          git push
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.PBL_TOKEN }}
