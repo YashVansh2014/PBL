@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Used Stationery Box — Secure Inventory</title>
+  <style>
+    body{font-family:system-ui;margin:18px;color:#111}
+    h1{font-size:22px;margin-bottom:10px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    input,textarea,button{font-size:14px;padding:8px;border:1px solid #ccc;border-radius:6px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border:1px solid #ddd}
+    th{background:#f4f4f4}
+    button{cursor:pointer}
+    .locked{opacity:0.5;pointer-events:none}
+  </style>
+</head>
+
+<body>
+
+<h1>Used Stationery Box — Secure Inventory</h1>
+
+<!-- Password Login -->
+<div>
+  <input id="passwordInput" type="password" placeholder="Enter password to edit" />
+  <button onclick="login()">Login</button>
+</div>
+
+<p id="loginStatus" style="color:red;font-size:14px;"></p>
+
+<!-- Form -->
+<div id="editArea" class="locked">
+  <div class="row">
+    <input id="name" placeholder="Item name" />
+    <input id="type" placeholder="Type" />
+    <input id="qty" type="number" placeholder="Qty" min="1" />
+    <input id="cost" type="number" placeholder="Cost (₹)" min="0" />
+    <button onclick="addItem()">Add</button>
+  </div>
+  <textarea id="notes" placeholder="Notes" style="width:100%;height:60px;"></textarea>
+</div>
+
+<!-- Table -->
+<table id="itemTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Qty</th>
+      <th>Cost</th>
+      <th>Notes</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+let PASSWORD = "1234"; // CHANGE THIS TO YOUR PRIVATE PASSWORD
+let canEdit = false;
+
+function login() {
+  const input = document.getElementById("passwordInput").value;
+  const status = document.getElementById("loginStatus");
+
+  if (input === PASSWORD) {
+    status.style.color = "green";
+    status.textContent = "Access granted. You can now edit.";
+    canEdit = true;
+    document.getElementById("editArea").classList.remove("locked");
+    loadItems();
+  } else {
+    status.style.color = "red";
+    status.textContent = "Incorrect password!";
+  }
+}
+
+function loadItems() {
+  let items = JSON.parse(localStorage.getItem("items") || "[]");
+  const tbody = document.querySelector("#itemTable tbody");
+  tbody.innerHTML = "";
+
+  items.forEach((item, index) => {
+    let row = `
+      <tr>
+        <td>${item.name}</td>
+        <td>${item.type}</td>
+        <td>${item.qty}</td>
+        <td>₹${item.cost}</td>
+        <td>${item.notes}</td>
+        <td>
+          <button onclick="editItem(${index})" ${!canEdit ? "disabled" : ""}>Edit</button>
+          <button onclick="deleteItem(${index})" ${!canEdit ? "disabled" : ""}>Delete</button>
+        </td>
+      </tr>
+    `;
+    tbody.innerHTML += row;
+  });
+}
+
+function addItem() {
+  if (!canEdit) return alert("Enter password to edit.");
+
+  let name = document.getElementById("name").value;
+  let type = document.getElementById("type").value;
+  let qty = document.getElementById("qty").value;
+  let cost = document.getElementById("cost").value;
+  let notes = document.getElementById("notes").value;
+
+  if (!name || !qty) return alert("Name and Qty required!");
+
+  let items = JSON.parse(localStorage.getItem("items") || "[]");
+  items.push({ name, type, qty, cost, notes });
+  localStorage.setItem("items", JSON.stringify(items));
+
+  loadItems();
+}
+
+function deleteItem(i) {
+  if (!canEdit) return alert("Enter password to edit.");
+
+  let items = JSON.parse(localStorage.getItem("items") || "[]");
+  items.splice(i, 1);
+  localStorage.setItem("items", JSON.stringify(items));
+  loadItems();
+}
+
+function editItem(i) {
+  if (!canEdit) return alert("Enter password to edit.");
+
+  let items = JSON.parse(localStorage.getItem("items") || "[]");
+  let item = items[i];
+
+  let newName = prompt("Edit name:", item.name);
+  let newType = prompt("Edit type:", item.type);
+  let newQty = prompt("Edit quantity:", item.qty);
+  let newCost = prompt("Edit cost:", item.cost);
+  let newNotes = prompt("Edit notes:", item.notes);
+
+  items[i] = {
+    name: newName || item.name,
+    type: newType || item.type,
+    qty: newQty || item.qty,
+    cost: newCost || item.cost,
+    notes: newNotes || item.notes
+  };
+
+  localStorage.setItem("items", JSON.stringify(items));
+  loadItems();
+}
+
+loadItems();
+</script>
+
+</body>
+</html>
