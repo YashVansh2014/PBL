@@ -1,61 +1,331 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Pen Inventory</title>
-    <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-        }
-        input, button {
-            padding: 8px;
-            margin: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-        }
-        th {
-            background: #f2f2f2;
-        }
-        .delete-btn {
-            background: red;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Used Stationery — Inventory (School Project)</title>
+<style>
+  :root{
+    --bg:#fff9ec; --card:#fff; --accent:#3b82f6; --muted:#6b7280; --danger:#ef4444;
+  }
+  body{font-family:Inter,system-ui,Arial; background: linear-gradient(180deg,#fff 0%,var(--bg) 100%); padding:18px; color:#111}
+  header{display:flex;align-items:center;gap:14px}
+  .logo{width:72px;height:72px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+  .logo h2{margin:0;color:var(--accent);font-size:18px}
+  h1{margin:0;font-size:20px}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-top:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input,select,button,textarea{font-size:14px;padding:8px;border-radius:8px;border:1px solid #e6e6e6}
+  input[type="number"]{width:110px}
+  .left{flex:1}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  .small{font-size:13px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:8px;border-bottom:1px dashed #eee;text-align:left}
+  th{background:transparent;color:var(--muted)}
+  .actions button{margin-right:6px;padding:6px 8px;border-radius:8px}
+  .btn-primary{background:var(--accent);color:white;border:none}
+  .btn-danger{background:var(--danger);color:white;border:none}
+  .badge{background:#eef6ff;padding:6px 10px;border-radius:999px;color:var(--accent);font-weight:600}
+  .muted{color:var(--muted)}
+  footer{margin-top:12px;font-size:13px;color:var(--muted)}
+  @media (max-width:720px){.row{flex-direction:column}}
+</style>
 </head>
 <body>
 
-    <h2>Pen Inventory</h2>
+<header>
+  <div class="logo"><h2>PBL</h2></div>
+  <div>
+    <h1>Used Stationery — Inventory</h1>
+    <div class="small">School-friendly tracker — add, edit, sort and save your box inventory</div>
+  </div>
+</header>
 
-    <input id="penName" placeholder="Pen name">
-    <input id="penCount" type="number" placeholder="Quantity">
-    <input id="penCost" type="number" placeholder="Cost per pen">
-    <button onclick="addItem()">Add Item</button>
+<!-- Login card -->
+<div class="card" id="loginCard" style="margin-top:14px;">
+  <div class="row" style="align-items:center">
+    <div style="min-width:220px">
+      <label>Enter admin password to edit</label>
+      <input id="passwordInput" type="password" placeholder="Password to edit (ask teacher)">
+    </div>
+    <div style="align-self:flex-end">
+      <button class="btn-primary" id="loginBtn">Login</button>
+      <button id="logoutBtn" style="display:none;margin-left:8px">Logout</button>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="muted">Status: <span id="loginStatus">View only</span></div>
+    </div>
+  </div>
+</div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Pen Name</th>
-                <th>Quantity</th>
-                <th>Cost</th>
-                <th>Total Cost</th>
-                <th>Delete</th>
-            </tr>
-        </thead>
-        <tbody id="inventoryTable"></tbody>
-    </table>
+<!-- Add / Edit card -->
+<div class="card" id="editCard">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="min-width:180px">
+      <label>Item name</label>
+      <input id="name" placeholder="e.g. Blue Ballpoint Pen">
+    </div>
+    <div style="min-width:140px">
+      <label>Category / Type</label>
+      <input id="type" placeholder="Pen / Pencil / Eraser">
+    </div>
+    <div>
+      <label>Quantity</label>
+      <input id="qty" type="number" min="1" value="1">
+    </div>
+    <div>
+      <label>Cost (per item ₹)</label>
+      <input id="cost" type="number" min="0" step="0.01" value="0">
+    </div>
 
-    <script src="script.js"></script>
+    <div style="margin-left:auto">
+      <button class="btn-primary" id="addBtn">Add item</button>
+      <button id="updateBtn" style="display:none;margin-left:8px">Save changes</button>
+      <button id="clearBtn" style="margin-left:6px">Clear</button>
+    </div>
+  </div>
 
+  <div style="margin-top:10px">
+    <label>Notes (optional)</label>
+    <textarea id="notes" rows="2" style="width:100%"></textarea>
+  </div>
+</div>
+
+<!-- Inventory display -->
+<div class="card">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="badge" id="totalCount">0 items</div>
+    <div class="muted">Total value: ₹<span id="totalValue">0.00</span></div>
+
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <label class="small">Sort</label>
+      <select id="sortBy">
+        <option value="added">Added (new → old)</option>
+        <option value="name">Name (A → Z)</option>
+        <option value="qty">Quantity (high → low)</option>
+        <option value="cost">Cost (high → low)</option>
+      </select>
+      <button id="exportBtn">Export .json</button>
+      <button id="importBtn">Import .json</button>
+      <input type="file" id="fileInput" accept="application/json" style="display:none">
+      <button id="syncBtn" title="Synchronize with central repo (optional)">Sync</button>
+    </div>
+  </div>
+
+  <table id="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Qty</th>
+        <th>Cost (₹)</th>
+        <th>Total (₹)</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<footer>
+  Tip: Use <strong>Export</strong> before sharing with other teachers. To keep a central copy across devices, enable the optional Sync feature (see instructions).
+</footer>
+
+<script>
+/* ========== Configuration ========== */
+const ADMIN_PASSWORD = "pathak00"; // change if you want (only in this file)
+const STORAGE_KEY = "pbl_inventory_v1";
+let inventory = [];
+let editingIndex = -1;
+let isAdmin = false;
+
+/* ========== Utilities ========== */
+const $ = sel => document.querySelector(sel);
+function formatMoney(n){ return Number(n || 0).toFixed(2); }
+function saveLocal(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
+function loadLocal(){ try{ inventory = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }catch(e){ inventory = [] } }
+
+/* ========== Rendering ========== */
+function render(){
+  const tbody = $("#table tbody");
+  tbody.innerHTML = "";
+  let totalQty = 0, totalVal = 0;
+  inventory.forEach((it, idx) => {
+    const total = Number(it.qty) * Number(it.cost || 0);
+    totalQty += Number(it.qty);
+    totalVal += total;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td>${escapeHtml(it.name)}</td>
+      <td>${escapeHtml(it.type)}</td>
+      <td>${it.qty}</td>
+      <td>₹${formatMoney(it.cost)}</td>
+      <td>₹${formatMoney(total)}</td>
+      <td>${escapeHtml(it.notes||"")}</td>
+      <td class="actions">
+        <button onclick="startEdit(${idx})" ${!isAdmin ? 'disabled' : ''}>Edit</button>
+        <button onclick="removeItem(${idx})" class="btn-danger" ${!isAdmin ? 'disabled' : ''}>Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  $("#totalCount").textContent = `${inventory.length} items`;
+  $("#totalValue").textContent = formatMoney(totalVal);
+}
+
+/* simple html escape */
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+/* ========== CRUD ========== */
+function addItem(){
+  if(!isAdmin) return alert("Enter admin password to edit.");
+  const name = $("#name").value.trim();
+  const type = $("#type").value.trim();
+  const qty = parseInt($("#qty").value) || 0;
+  const cost = parseFloat($("#cost").value) || 0;
+  const notes = $("#notes").value.trim();
+  if(!name || qty<=0){ alert("Enter valid name and quantity."); return; }
+  inventory.unshift({ name, type, qty, cost, notes, added: Date.now() });
+  saveLocal(); render(); clearForm();
+}
+
+function startEdit(i){
+  if(!isAdmin) return;
+  editingIndex = i;
+  const it = inventory[i];
+  $("#name").value = it.name;
+  $("#type").value = it.type;
+  $("#qty").value = it.qty;
+  $("#cost").value = it.cost;
+  $("#notes").value = it.notes || "";
+  $("#addBtn").style.display = "none";
+  $("#updateBtn").style.display = "inline-block";
+}
+
+function saveEdit(){
+  if(!isAdmin) return;
+  if(editingIndex < 0) return;
+  const it = inventory[editingIndex];
+  it.name = $("#name").value.trim();
+  it.type = $("#type").value.trim();
+  it.qty = parseInt($("#qty").value) || it.qty;
+  it.cost = parseFloat($("#cost").value) || it.cost;
+  it.notes = $("#notes").value.trim();
+  editingIndex = -1;
+  $("#addBtn").style.display = "inline-block";
+  $("#updateBtn").style.display = "none";
+  saveLocal(); render(); clearForm();
+}
+
+function removeItem(i){
+  if(!isAdmin) return;
+  if(!confirm("Delete this item?")) return;
+  inventory.splice(i,1); saveLocal(); render();
+}
+
+function clearForm(){
+  $("#name").value=""; $("#type").value=""; $("#qty").value=1; $("#cost").value=0; $("#notes").value="";
+}
+
+/* ========== Auth ========== */
+function login(){
+  const val = $("#passwordInput").value.trim();
+  if(val === ADMIN_PASSWORD){
+    isAdmin = true;
+    $("#loginStatus").textContent = "Edit access (admin)";
+    $("#loginBtn").style.display = "none";
+    $("#logoutBtn").style.display = "inline-block";
+    $("#passwordInput").value = "";
+    $("#editCard").style.opacity = 1;
+    render();
+  } else {
+    alert("Wrong password");
+  }
+}
+
+function logout(){
+  isAdmin = false;
+  $("#loginStatus").textContent = "View only";
+  $("#loginBtn").style.display = "inline-block";
+  $("#logoutBtn").style.display = "none";
+  $("#editCard").style.opacity = 0.6;
+  clearForm(); render();
+}
+
+/* ========== Import / Export / Sync ========== */
+function exportJson(){
+  const data = JSON.stringify(inventory, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "inventory.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJsonFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!Array.isArray(parsed)) throw new Error("Invalid file");
+      inventory = parsed;
+      saveLocal(); render();
+      alert("Import successful");
+    }catch(e){ alert("Import failed: " + e.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* Optional sync: sends inventory to a serverless endpoint which will commit to GitHub.
+   NOTE: This requires you to deploy a small serverless function (Netlify/Vercel) and set it up.
+   If you don't have such a service, Sync will fail (it is optional). */
+async function syncToServer(){
+  if(!confirm("Sync inventory to central repo (optional)?")) return;
+  try{
+    const resp = await fetch("/.netlify/functions/updateInventory", { // adjust URL if using another provider
+      method:"POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ inventory })
+    });
+    const j = await resp.json();
+    if(resp.ok) alert("Sync succeeded");
+    else alert("Sync failed: " + (j.message || resp.statusText));
+  }catch(err){
+    alert("Sync request failed: " + err.message);
+  }
+}
+
+/* ========== Sorting ========== */
+function sortInventory(method){
+  if(method === "added") inventory.sort((a,b)=> (b.added||0) - (a.added||0));
+  else if(method === "name") inventory.sort((a,b)=> a.name.localeCompare(b.name));
+  else if(method === "qty") inventory.sort((a,b)=> (b.qty||0) - (a.qty||0));
+  else if(method === "cost") inventory.sort((a,b)=> (b.cost||0) - (a.cost||0));
+  saveLocal(); render();
+}
+
+/* ========== Events ========== */
+document.addEventListener("DOMContentLoaded", ()=> {
+  loadLocal();
+  // default UI state: not admin
+  logout();
+  render();
+
+  $("#loginBtn").onclick = login;
+  $("#logoutBtn").onclick = logout;
+  $("#addBtn").onclick = addItem;
+  $("#updateBtn").onclick = saveEdit;
+  $("#clearBtn").onclick = clearForm;
+  $("#exportBtn").onclick = exportJson;
+  $("#importBtn").onclick = ()=> $("#fileInput").click();
+  $("#fileInput").onchange = e=> { if(e.target.files[0]) importJsonFile(e.target.files[0]); e.target.value = ""; };
+  $("#sortBy").onchange = e=> sortInventory(e.target.value);
+  $("#syncBtn").onclick = syncToServer;
+});
+</script>
 </body>
 </html>
